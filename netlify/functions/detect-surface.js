@@ -58,20 +58,17 @@ exports.handler = async (event) => {
     const clientPhoto = parseDataUrl(photo);
 
     const prompt = [
-      "Regarde cette photo d'un meuble (cuisine, façade, plan de travail...).",
-      "Détecte UNIQUEMENT les façades des placards et tiroirs de la cuisine.",
-      "(portes de placard, façades, plan de travail) — PAS les murs, le sol,",
-      "le plafond, les objets posés dessus, ni l'arrière-plan, les appareils électroménagers (four, micro-ondes), l'évier, et le plan de travail.",
-      "",
-      "Réponds UNIQUEMENT avec un objet JSON de cette forme exacte, sans texte",
-      "autour, sans balises markdown :",
-      '{"boxes":[{"x":0.12,"y":0.30,"w":0.40,"h":0.35}, ...]}',
-      "",
-      "Où x,y sont le coin haut-gauche de chaque rectangle et w,h sa largeur",
-      "et hauteur, tous exprimés en fraction de la largeur/hauteur totale de",
-      "l'image (valeurs entre 0 et 1). Un rectangle par grande zone de meuble",
-      "identifiée. Si aucune surface de meuble n'est identifiable, réponds",
-      '{"boxes":[]}'
+      const prompt = `
+Tu es un expert en détection d'objets. 
+Analyse l'image et trouve toutes les surfaces planes des meubles (placards, tiroirs). Exclut absolument les apparareils électroménagers, les murs, les sols, les objets
+Renvoie EXACTEMENT un objet JSON comme ceci, sans aucune explication avant ou après :
+{
+  "boxes": [
+    {"x": 0.1, "y": 0.1, "w": 0.2, "h": 0.2}
+  ]
+}
+Si tu ne trouves rien, renvoie {"boxes": []}.
+`;
     ].join('\n');
 
     const body = {
