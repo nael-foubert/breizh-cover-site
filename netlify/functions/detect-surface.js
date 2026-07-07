@@ -57,68 +57,86 @@ exports.handler = async (event) => {
     }
     const clientPhoto = parseDataUrl(photo);
 
+    // Prompt affiné : rôle explicite, définition précise et exclusions
+    // sans ambiguïté, contrainte "un rectangle par façade individuelle"
+    // (plutôt qu'un seul grand rectangle englobant), et rappel de la
+    // convention de coordonnées pour éviter les inversions x/y.
     const prompt = [
-      "Tu es un expert en vision par ordinateur. Analyse cette image de cuisine ou de meuble."
-      "Trouve TOUTES les portes de placards, tiroirs et façades. Exclus le vide et l'électroménager."
-      "Tu dois absolument renvoyer un objet JSON contenant un tableau ""boxes"" non vide."
-      "Les valeurs x, y, w, h doivent être des pourcentages (entre 0.0 et 1.0)."
-
-      "Exemple de réponse attendue :"
-        {
-          "boxes": [
-                    "{"x": 0.1, "y": 0.1, "w": 0.3, "h": 0.4},"
-                    "{"x": 0.45, "y": 0.1, "w": 0.3, "h": 0.4}"
-                  ]
-        }
-
-    "Ne renvoie AUCUN texte avant ou après, uniquement le JSON pur et valide.","
-        '{"boxes":[]}'
-
+      "Tu es un système de vision par ordinateur spécialisé dans la détection",
+      "d'objets sur des photos de cuisines et de meubles.",
+      "",
+      "TÂCHE : identifie chaque FAÇADE individuelle de meuble visible sur la",
+      "photo — c'est-à-dire chaque porte de placard, chaque tiroir, et le ou",
+      "les panneaux de plan de travail vus de face. Traite chaque porte et",
+      "chaque tiroir comme une zone SÉPARÉE avec son propre rectangle, même",
+      "si plusieurs façades sont côte à côte sur le même meuble.",
+      "",
+      "EXCLUS explicitement de la détection :",
+      "- les murs, le sol, le plafond, le carrelage, la crédence",
+      "- les poignées, boutons, charnières (garde juste la façade derrière)",
+      "- les appareils électroménagers (four, plaque, hotte, réfrigérateur, micro-ondes, lave-vaisselle)",
+      "- l'évier, le robinet, et tout objet posé sur le plan de travail (vaisselle, plantes, ustensiles)",
+      "- les fenêtres, l'éclairage, la décoration murale",
+      "- toute zone hors du meuble (arrière-plan, autres pièces visibles)",
+      "",
+      "Si une façade est partiellement cachée par un objet ou coupée par le",
+      "cadre de la photo, donne quand même son rectangle en te basant sur la",
+      "partie visible.",
+      "",
+      "FORMAT DE COORDONNÉES (important, à respecter strictement) :",
+      "- x, y = coin HAUT-GAUCHE du rectangle",
+      "- x = distance depuis le bord GAUCHE de l'image, en fraction de la largeur totale (0 = bord gauche, 1 = bord droit)",
+      "- y = distance depuis le bord HAUT de l'image, en fraction de la hauteur totale (0 = bord haut, 1 = bord bas)",
+      "- w = largeur du rectangle, h = hauteur du rectangle, mêmes unités (fraction 0-1)",
+      "- toutes les valeurs sont des nombres décimaux entre 0 et 1",
+      "",
+      "Réponds UNIQUEMENT avec un objet JSON valide, sans texte autour, sans",
+      "balises markdown, exactement dans cette forme :",
+      '{"boxes":[{"x":0.12,"y":0.30,"w":0.18,"h":0.35}, {"x":0.32,"y":0.30,"w":0.18,"h":0.35}]}',
+      "",
+      "Si aucune façade de meuble n'est identifiable sur la photo, réponds :",
+      '{"boxes":[]}'
     ].join('\n');
 
     const body = {
-  contents: [
-    {
-      parts: [
-        { 
-          text: prompt // Ton texte d'instruction pour l'IA (ex: "Détecte les meubles et renvoie les coordonnées")
-        },
-        { 
-          inline_data: { 
-            mime_type: clientPhoto.mimeType, // Le type MIME de l'image (ex: "image/jpeg")
-            data: clientPhoto.base64       // L'image convertie en Base64
-          } 
+      contents: [
+        {
+          parts: [
+            { text: prompt },
+            {
+              inline_data: {
+                mime_type: clientPhoto.mimeType,
+                data: clientPhoto.base64
+              }
+            }
+          ]
         }
-      ]
-    }
-  ],
-  generationConfig: { 
-    // On force l'API à répondre en JSON
-    responseMimeType: 'application/json',
-    
-    // LA MODIFICATION : On impose la structure exacte du JSON attendu
-    responseSchema: {
-      type: "OBJECT",
-      properties: {
-        boxes: {
-          type: "ARRAY",
-          items: {
-            type: "OBJECT",
-            properties: {
-              x: { type: "NUMBER" },
-              y: { type: "NUMBER" },
-              w: { type: "NUMBER" }, // Largeur (width)
-              h: { type: "NUMBER" }  // Hauteur (height)
-            },
-            // On rend ces champs obligatoires pour être sûr que l'IA ne les oublie pas
-            required: ["x", "y", "w", "h"]
-          }
+      ],
+      generationConfig: {
+        // On force l'API à répondre en JSON strictement structuré, pour
+        // ne jamais avoir à parser du texte libre ou du markdown.
+        responseMimeType: 'application/json',
+        responseSchema: {
+          type: "OBJECT",
+          properties: {
+            boxes: {
+              type: "ARRAY",
+              items: {
+                type: "OBJECT",
+                properties: {
+                  x: { type: "NUMBER" },
+                  y: { type: "NUMBER" },
+                  w: { type: "NUMBER" },
+                  h: { type: "NUMBER" }
+                },
+                required: ["x", "y", "w", "h"]
+              }
+            }
+          },
+          required: ["boxes"]
         }
-      },
-      required: ["boxes"]
-    }
-  }
-};
+      }
+    };
 
     const geminiRes = await fetch(GEMINI_URL, {
       method: 'POST',
@@ -133,7 +151,7 @@ exports.handler = async (event) => {
     }
 
     const data = await geminiRes.json();
-console.log("Réponse brute de Gemini reçue !");
+    console.log("Réponse brute de Gemini reçue !");
     const text = data?.candidates?.[0]?.content?.parts?.map(p => p.text).filter(Boolean).join('\n');
     if(!text){
       console.error('Réponse Gemini sans texte:', JSON.stringify(data).slice(0, 500));
