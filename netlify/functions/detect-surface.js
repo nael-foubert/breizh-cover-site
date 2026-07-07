@@ -8,7 +8,7 @@
 //   Site settings → Environment variables → ajouter GEMINI_API_KEY
 // (jamais dans le code, jamais commité sur GitHub).
 
-const GEMINI_MODEL = 'gemini-2.5-flash'; // texte + vision, niveau gratuit
+const GEMINI_MODEL = 'gemini-3.1-flash-lite'; // texte + vision, niveau gratuit
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
 function parseDataUrl(dataUrl){
