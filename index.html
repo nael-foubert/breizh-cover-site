@@ -1324,10 +1324,13 @@ function boxesToMaskDataUrl(boxes, width, height) {
           throw new Error(`Le serveur a renvoyé une erreur (${res.status}). ${errText}`);
         }
 
-        const { boxes } = await res.json();
-        if(!Array.isArray(boxes) || !boxes.length){
-          throw new Error("Aucune zone de meuble n'a été détectée sur cette photo.");
-        }
+        const responseData = await res.json();
+console.log("🔍 Réponse complète du backend :", responseData); // On inspecte les données brutes !
+
+const boxes = responseData.boxes || responseData; // Au cas où l'IA renvoie le tableau directement
+if(!Array.isArray(boxes) || !boxes.length){
+  throw new Error("Aucune zone de meuble n'a été détectée sur cette photo.");
+}
 	console.log("Coordonnées reçues de l'IA :", boxes);
         cachedBoxes = boxes;
         applySwatch();
