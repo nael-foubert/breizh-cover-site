@@ -58,19 +58,20 @@ exports.handler = async (event) => {
     const clientPhoto = parseDataUrl(photo);
 
     const prompt = [
-      "Tu es un expert de la détection d'image. Regarde cette photo d'un meuble (cuisine, façade, plan de travail...).",
-      "Détecte UNIQUEMENT les façades des placards et tiroirs de la cuisine.",
-      "(portes de placard, façades, plan de travail) — PAS les murs, le sol,",
-      "le plafond, les objets posés dessus, ni l'arrière-plan, les appareils électroménagers (four, micro-ondes), l'évier, et le plan de travail.",
-      "",
-      "Réponds UNIQUEMENT avec un objet JSON de cette forme exacte, sans texte",
-      "autour, sans balises markdown :",
-      '{"boxes":[{"x":0.12,"y":0.30,"w":0.40,"h":0.35}, ...]}',
-      "",
-      "Où x,y sont le coin haut-gauche de chaque rectangle et w,h sa largeur",
-      "et hauteur, tous exprimés en fraction de la largeur/hauteur totale de",
-      "l'image (valeurs entre 0 et 1). Un rectangle par grande zone de meuble",
-      "identifiée. Si aucune surface de meuble n'est identifiable, réponds",
+      "Tu es un expert en vision par ordinateur. Analyse cette image de cuisine ou de meuble.
+"Trouve TOUTES les portes de placards, tiroirs et façades. Exclus le vide et l'électroménager.
+"Tu dois absolument renvoyer un objet JSON contenant un tableau ""boxes"" non vide.
+"Les valeurs x, y, w, h doivent être des pourcentages (entre 0.0 et 1.0).
+
+"Exemple de réponse attendue :
+"{
+  "boxes": [
+    {"x": 0.1, "y": 0.1, "w": 0.3, "h": 0.4},
+    {"x": 0.45, "y": 0.1, "w": 0.3, "h": 0.4}
+  ]
+}
+
+"Ne renvoie AUCUN texte avant ou après, uniquement le JSON pur et valide.",
       '{"boxes":[]}'
 
     ].join('\n');
