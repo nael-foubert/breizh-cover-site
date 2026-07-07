@@ -69,7 +69,7 @@ exports.handler = async (event) => {
       "Tu es un système de vision par ordinateur de haute précision spécialisé dans le détourage de meubles.",
       "",
       "TÂCHE : Identifie CHAQUE façade de meuble individuelle visible (chaque porte de placard individuelle, chaque tiroir séparé).",
-      "ATTENTION : Chaque porte ou tiroir doit avoir sa propre boîte (box) bien distincte. Ne fais JAMAIS un seul grand rectangle englobant pour toute la cuisine.",
+      "ATTENTION : Chaque porte ou tiroir doit avoir sa propre boîte (box) bien distincte. Ne fais JAMAIS un seul grand rectangle englobant pour toute la cuisine. Sois extrêmement minutieux : aligne les bords des rectangles pile sur les joints et les lignes de séparation des portes.",
       "",
       "EXCLUSIONS STRICTES ET IMPÉRATIVES :",
       "- EXCLUS le plan de travail, la crédence, l'évier, le robinet, les murs, le sol.",
@@ -83,7 +83,7 @@ exports.handler = async (event) => {
       "- w : largeur du rectangle (entre 0 et 1000)",
       "- h : hauteur du rectangle (entre 0 et 1000)",
       "Toutes les valeurs x, y, w, h doivent obligatoirement être des NOMBRES ENTIERS compris entre 0 et 1000."
-      "Sois extrêmement minutieux : aligne les bords des rectangles pile sur les joints et les lignes de séparation des portes."
+
     ].join('\n');
 
     const body = {
