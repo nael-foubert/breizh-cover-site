@@ -1,5 +1,5 @@
 // netlify/functions/detect-surface.js
-const GEMINI_MODEL = 'gemini-3.1-flash-lite'; 
+const GEMINI_MODEL = 'gemini-3.1-flash-lite'; // On reste bien sur le modèle gratuit
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
 function parseDataUrl(dataUrl){
@@ -22,8 +22,7 @@ function extractBoxesFromText(text){
       let w = Number(b.w);
       let h = Number(b.h);
 
-      // SÉCURITÉ : Si Gemini renvoie des entiers entre 0 et 1000 (sa spécialité absolue),
-      // on les divise par 1000 pour redonner des pourcentages propres au frontend (0 à 1)
+      // Convertit l'échelle 0-1000 de l'IA en pourcentages 0-1 pour le index.html
       if (x > 1 || y > 1 || w > 1 || h > 1) {
         x = x / 1000;
         y = y / 1000;
@@ -34,7 +33,7 @@ function extractBoxesFromText(text){
     })
     .filter(b =>
       [b.x, b.y, b.w, b.h].every(n => Number.isFinite(n) && n >= 0 && n <= 1) &&
-      b.w > 0.01 && b.h > 0.01
+      b.w > 0.005 && b.h > 0.005
     );
 }
 
@@ -64,26 +63,28 @@ exports.handler = async (event) => {
     }
     const clientPhoto = parseDataUrl(photo);
 
-    // PROMPT BOOSTÉ EN PRÉCISION ET SANS FLOATS
     const prompt = [
-      "Tu es un système de vision par ordinateur de haute précision spécialisé dans le détourage de meubles.",
+      "Tu es un système de vision par ordinateur de haute précision spécialisé dans le mobilier de cuisine.",
       "",
-      "TÂCHE : Identifie CHAQUE façade de meuble individuelle visible (chaque porte de placard individuelle, chaque tiroir séparé).",
-      "ATTENTION : Chaque porte ou tiroir doit avoir sa propre boîte (box) bien distincte. Ne fais JAMAIS un seul grand rectangle englobant pour toute la cuisine. Sois extrêmement minutieux : aligne les bords des rectangles pile sur les joints et les lignes de séparation des portes.",
+      "CONSIGNE IMPÉRATIVE DE SÉPARATION (RÈGLE D'OR) :",
+      "Il est strictement interdit de regrouper une rangée de placards dans un seul rectangle.",
+      "Regarde les fines lignes de joint verticales et horizontales. Découpe l'image en autant de rectangles individuels qu'il y a de portes uniques.",
       "",
-      "EXCLUSIONS STRICTES ET IMPÉRATIVES :",
+      "MÉTHODE OBLIGATOIRE (Étape par Étape) :",
+      "1. Dans le champ 'analyse_textuelle', liste précisément à voix haute ce que tu t'apprêtes à détourer (Ex: 'Je vois la colonne de gauche divisée en 3 portes, la rangée du haut avec 6 portes verticales distinctes, et la rangée du bas avec 5 portes').",
+      "2. Dans le champ 'nombre_total_de_portes', indique le nombre exact trouvé.",
+      "3. Dans le tableau 'boxes', génère un rectangle UNIQUE pour CHAQUE porte listée précédemment.",
+      "",
+      "EXCLUSIONS STRICTES :",
       "- EXCLUS le plan de travail, la crédence, l'évier, le robinet, les murs, le sol.",
-      "- EXCLUS la grande niche ouverte centrale en bois.",
-      "- EXCLUS intégralement les appareils électroménagers (le four et le micro-ondes situés dans la colonne de droite ne doivent JAMAIS être détectés).",
+      "- EXCLUS la grande niche ouverte centrale en bois brun.",
+      "- EXCLUS intégralement le four et le micro-ondes (colonne de droite).",
       "",
-      "SYSTÈME DE COORDONNÉES (Échelle 0 à 1000) :",
-      "Imagine que l'image fait exactement 1000 unités de large et 1000 unités de haut.",
-      "- x : position horizontale du coin haut-gauche (0 = bord gauche, 1000 = bord droit)",
-      "- y : position verticale du coin haut-gauche (0 = bord haut, 1000 = bord bas)",
-      "- w : largeur du rectangle (entre 0 et 1000)",
-      "- h : hauteur du rectangle (entre 0 et 1000)",
-      "Toutes les valeurs x, y, w, h doivent obligatoirement être des NOMBRES ENTIERS compris entre 0 et 1000."
-
+      "SYSTÈME DE COORDONNÉES ENTIÈRES (Échelle 0 à 1000) :",
+      "Imagine que l'image fait 1000x1000 unités.",
+      "- x, y : position du coin haut-gauche (0 à 1000)",
+      "- w, h : largeur et hauteur du rectangle (0 à 1000)",
+      "Toutes les valeurs DOIVENT être des NOMBRES ENTIERS (INTEGER) compris entre 0 et 1000."
     ].join('\n');
 
     const body = {
@@ -96,11 +97,13 @@ exports.handler = async (event) => {
         }
       ],
       generationConfig: {
-        temperature: 0.1,
+        temperature: 0.1, // Bloque la créativité
         responseMimeType: 'application/json',
         responseSchema: {
           type: "OBJECT",
           properties: {
+            analyse_textuelle: { type: "STRING" }, // Force l'IA à réfléchir d'abord
+            nombre_total_de_portes: { type: "INTEGER" },
             boxes: {
               type: "ARRAY",
               items: {
@@ -115,7 +118,7 @@ exports.handler = async (event) => {
               }
             }
           },
-          required: ["boxes"]
+          required: ["analyse_textuelle", "nombre_total_de_portes", "boxes"]
         }
       }
     };
@@ -128,13 +131,13 @@ exports.handler = async (event) => {
 
     if(!geminiRes.ok){
       const errText = await geminiRes.text().catch(()=> '');
-      return { statusCode: 502, headers: cors, body: JSON.stringify({ error: "L'API Gemini a renvoyé une erreur.", details: errText }) };
+      return { statusCode: 502, headers: cors, body: JSON.stringify({ error: "Erreur API Gemini.", details: errText }) };
     }
 
     const data = await geminiRes.json();
     const text = data?.candidates?.[0]?.content?.parts?.map(p => p.text).filter(Boolean).join('\n');
     if(!text){
-      return { statusCode: 502, headers: cors, body: JSON.stringify({ error: "Pas de résultat exploitable." }) };
+      return { statusCode: 502, headers: cors, body: JSON.stringify({ error: "Pas de résultat." }) };
     }
 
     let boxes;
@@ -148,6 +151,6 @@ exports.handler = async (event) => {
 
   } catch(err){
     console.error('Erreur detect-surface:', err);
-    return { statusCode: 500, headers: cors, body: JSON.stringify({ error: 'Erreur interne du serveur.' }) };
+    return { statusCode: 500, headers: cors, body: JSON.stringify({ error: 'Erreur interne.' }) };
   }
 };
