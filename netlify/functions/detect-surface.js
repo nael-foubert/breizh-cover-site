@@ -83,6 +83,7 @@ exports.handler = async (event) => {
       "- w : largeur du rectangle (entre 0 et 1000)",
       "- h : hauteur du rectangle (entre 0 et 1000)",
       "Toutes les valeurs x, y, w, h doivent obligatoirement être des NOMBRES ENTIERS compris entre 0 et 1000."
+      "Sois extrêmement minutieux : aligne les bords des rectangles pile sur les joints et les lignes de séparation des portes."
     ].join('\n');
 
     const body = {
@@ -95,6 +96,7 @@ exports.handler = async (event) => {
         }
       ],
       generationConfig: {
+        temperature: 0.1,
         responseMimeType: 'application/json',
         responseSchema: {
           type: "OBJECT",
