@@ -1182,7 +1182,7 @@ apiDataUrl = null;
           sourceImg = img; // On garde les dimensions originales pour le masque
           
           const canvas = document.createElement('canvas');
-          const MAX_SIZE = 768; 
+          const MAX_SIZE = 1024; 
           let width = img.naturalWidth || img.width;
           let height = img.naturalHeight || img.height;
 
@@ -1209,7 +1209,7 @@ apiDataUrl = null;
           ctx.drawImage(img, 0, 0, width, height);
 
           // On sauvegarde la version mini pour l'envoi API
-          apiDataUrl = canvas.toDataURL('image/jpeg', 0.7);
+          apiDataUrl = canvas.toDataURL('image/jpeg', 0.8);
         };
         img.src = sourceDataUrl;
       };
