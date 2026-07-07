@@ -58,21 +58,21 @@ exports.handler = async (event) => {
     const clientPhoto = parseDataUrl(photo);
 
     const prompt = [
-      "Tu es un expert en vision par ordinateur. Analyse cette image de cuisine ou de meuble.
-"Trouve TOUTES les portes de placards, tiroirs et façades. Exclus le vide et l'électroménager.
-"Tu dois absolument renvoyer un objet JSON contenant un tableau ""boxes"" non vide.
-"Les valeurs x, y, w, h doivent être des pourcentages (entre 0.0 et 1.0).
+      "Tu es un expert en vision par ordinateur. Analyse cette image de cuisine ou de meuble."
+      "Trouve TOUTES les portes de placards, tiroirs et façades. Exclus le vide et l'électroménager."
+      "Tu dois absolument renvoyer un objet JSON contenant un tableau ""boxes"" non vide."
+      "Les valeurs x, y, w, h doivent être des pourcentages (entre 0.0 et 1.0)."
 
-"Exemple de réponse attendue :
-"{
-  "boxes": [
-    {"x": 0.1, "y": 0.1, "w": 0.3, "h": 0.4},
-    {"x": 0.45, "y": 0.1, "w": 0.3, "h": 0.4}
-  ]
-}
+      "Exemple de réponse attendue :"
+        {
+          "boxes": [
+                    "{"x": 0.1, "y": 0.1, "w": 0.3, "h": 0.4},"
+                    "{"x": 0.45, "y": 0.1, "w": 0.3, "h": 0.4}"
+                  ]
+        }
 
-"Ne renvoie AUCUN texte avant ou après, uniquement le JSON pur et valide.",
-      '{"boxes":[]}'
+    "Ne renvoie AUCUN texte avant ou après, uniquement le JSON pur et valide.","
+        '{"boxes":[]}'
 
     ].join('\n');
 
