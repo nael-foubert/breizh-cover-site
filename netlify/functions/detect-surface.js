@@ -58,8 +58,7 @@ exports.handler = async (event) => {
     const clientPhoto = parseDataUrl(photo);
 
     const prompt = [
-      const prompt = `
-Tu es un expert en détection d'objets. 
+      const prompt = `Tu es un expert en détection d'objets. 
 Analyse l'image et trouve toutes les surfaces planes des meubles (placards, tiroirs). Exclut absolument les apparareils électroménagers, les murs, les sols, les objets
 Renvoie EXACTEMENT un objet JSON comme ceci, sans aucune explication avant ou après :
 {
@@ -67,8 +66,9 @@ Renvoie EXACTEMENT un objet JSON comme ceci, sans aucune explication avant ou ap
     {"x": 0.1, "y": 0.1, "w": 0.2, "h": 0.2}
   ]
 }
-Si tu ne trouves rien, renvoie {"boxes": []}.
-`;
+Si tu ne trouves rien, renvoie {"boxes": []}.`;
+
+
     ].join('\n');
 
     const body = {
